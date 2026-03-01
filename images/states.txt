@@ -1,0 +1,9 @@
+lampes:0
+dimarage:1
+batterie:0
+ceinture:0
+phare:0
+code:0
+frein_a_main:0
+signalGauche:0
+signalDroite:0

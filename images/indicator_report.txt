@@ -1,0 +1,15 @@
+DASHBOARD INDICATOR STATUS REPORT
+============================================================
+Indicator            State    Color        RGB            
+------------------------------------------------------------
+lampes               ON       cyan         (66, 87, 103)  
+libre_volant         OFF      gray         (86, 80, 95)   
+batterie             ON       cyan         (68, 88, 103)  
+ceinture             OFF      gray         (87, 76, 86)   
+phare                ON       cyan         (76, 92, 103)  
+code                 ON       cyan         (77, 92, 103)  
+frein_a_main         ON       red          (107, 71, 80)  
+signalGauche         OFF      gray         (67, 80, 89)   
+signalDroite         ON       cyan         (66, 79, 89)   
+============================================================
+Legend: OFF = Grayscale (R≈G≈B) | ON = Dominant Color

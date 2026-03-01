@@ -1,0 +1,11 @@
+Object Color Analysis
+======================================================================
+1. lampes               RGB(16, 17, 208)
+2. libre volant         RGB(54, 191, 0)
+3. batterie             RGB(207, 16, 16)
+4. ceinture             RGB(42, 193, 193)
+5. phare                RGB(209, 18, 209)
+6. code                 RGB(207, 208, 17)
+7. frain a main         RGB(148, 1, 97)
+8. signalGauche         RGB(50, 97, 51)
+9. signalDroite         RGB(50, 97, 97)
