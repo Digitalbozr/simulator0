@@ -110,17 +110,27 @@ def detect_indicator(region, label):
         max_diff = max(abs(r-g), abs(r-b), abs(g-b))
         return 0 if max_diff < THRESHOLD else 1
 
+serial_buffer = ""
 
 def read_serial():
-    if ser.in_waiting:
-        line = ser.readline().decode().strip()
+    global serial_buffer
 
-        if line.startswith("STATE"):
-            parts = line.replace("STATE,", "").replace(",END", "").split(",")
+    if ser.in_waiting > 0:
+        data = ser.read(ser.in_waiting).decode(errors="ignore")
+        serial_buffer += data
 
-            for i, val in enumerate(parts):
-                real_state[i] = int(val)
+        while "\n" in serial_buffer:
+            line, serial_buffer = serial_buffer.split("\n", 1)
+            line = line.strip()
 
+            if line:
+                print("SERIAL →", line)
+
+            if line.startswith("STATE"):
+                parts = line.replace("STATE,", "").replace(",END", "").split(",")
+
+                for i, val in enumerate(parts):
+                    real_state[i] = int(val)
 
 # =========================
 # MAIN LOOP

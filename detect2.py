@@ -13,7 +13,7 @@ cropped = image[0:230, 0:263]
 objects = [
     [50, 16, 2, 2, "lampes"],
     [214, 20, 2, 2, "dimarage"],
-    [230, 44, 2, 2, "batterie"],
+    [232, 46, 2, 2, "batterie"],
     [246, 62, 2, 2, "ceinture"],
     [184, 212, 2, 2, "phare"],
     [206, 198, 1, 1, "code"],

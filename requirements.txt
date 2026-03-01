@@ -1,2 +1,1 @@
-mss opencv-python numpy
-
+mss opencv-python numpy pyserial pynput
