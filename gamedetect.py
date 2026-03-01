@@ -6,8 +6,8 @@ import time
 # =========================
 # CONFIG
 # =========================
-TOLERANCE_PERCENT = 0.40
-MONITOR_INDEX = 2   
+TOLERANCE_PERCENT = 0.60
+MONITOR_INDEX = 1  
 
 game_points = [
     (191, 69),
