@@ -8,8 +8,8 @@ from pynput.keyboard import Controller
 # =========================
 # CONFIG
 # =========================
-MONITOR_INDEX = 2
-SERIAL_PORT = "COM6"
+MONITOR_INDEX = 1
+SERIAL_PORT = "COM8"
 BAUDRATE = 115200
 FPS_DELAY = 0.05
 TOLERANCE_PERCENT = 0.40
@@ -42,7 +42,7 @@ expected_colors = [
 objects = [
     [50, 16, 2, 2, "lampes", 8],
     [214, 20, 2, 2, "dimarage", 0],
-    [230, 44, 2, 2, "batterie", 9],
+    [232, 46, 2, 2, "batterie", 1],
     [246, 62, 2, 2, "ceinture", 2],
     [184, 212, 2, 2, "phare", 10],
     [206, 198, 1, 1, "code", 9],
@@ -64,7 +64,7 @@ key_map = {
     13: 'r',  # right
 }
 
-hold_indices = [0, 4, 11]  # مثال HOLD (عدل حسب نظامك)
+hold_indices = [0, 4, 11] 
 
 last_send_time = {}
 real_state = {}
