@@ -9,7 +9,7 @@ import serial
 # ============================================================
 
 MONITOR_INDEX = 1
-SERIAL_PORT = "COM8"
+SERIAL_PORT = "COM7"
 BAUDRATE = 115200
 
 FPS_DELAY = 0.05
@@ -35,9 +35,9 @@ RIGHT_INDEX = 13
 key_map = {
     2: 'c',     # seatbelt
     3: '1',     # handbrake
-    8: 'p',     # position
-    9: 'g',     # fog
-    10: 'd',    # dipped
+    9: 'g',     # 
+    7: 'p',     # code
+    10: 'k',    # feux de route
     12: 'l',    # left
     13: 'r',    # right
     5: 'h',     # hazard
@@ -83,15 +83,15 @@ expected_colors = [
 # ============================================================
 
 objects = [
-    [50, 16, 2, 2, "lampes", 8],
+    # [206, 198, 2, 2, "code", 8],
     [214, 20, 2, 2, "dimarage", 0],
     [232, 46, 2, 2, "batterie", 1],
     [246, 62, 2, 2, "ceinture", 2],
-    [184, 212, 2, 2, "phare", 10],
-    [206, 198, 1, 1, "code", 9],
+    [184, 212, 2, 2, "phare", 9],
+    [206, 198, 1, 1, "code", 7],
     [226, 176, 2, 2, "frein_a_main", 3],
-    [170, 146, 5, 5, "signalGauche", LEFT_INDEX],
-    [198, 146, 5, 5, "signalDroite", RIGHT_INDEX],
+    [170, 146, 5, 5, "signalGauche", 13],
+    [198, 146, 5, 5, "signalDroite", 12],
 ]
 
 # ============================================================
