@@ -44,6 +44,8 @@ def send_car_state(battery,engine):
 
         cmd = f"CAR_STATE,{battery},{engine}\n"
 
+        print("SEND ->", cmd.strip())
+
         ser.write(cmd.encode())
 
         last_car_state = state
@@ -102,6 +104,8 @@ with mss.mss() as sct:
 
     monitor = sct.monitors[1]
 
+    print("VISION SYSTEM STARTED")
+
     while True:
 
         screenshot = np.array(sct.grab(monitor))
@@ -114,6 +118,8 @@ with mss.mss() as sct:
         cropped = frame[0:230,0:263]
 
         if not is_game_open(cropped):
+
+            print("GAME NOT DETECTED")
 
             time.sleep(0.5)
             continue
@@ -134,6 +140,12 @@ with mss.mss() as sct:
             if label == "battery":
 
                 battery_state = state
+
+        print(
+            "GAME STATE ->",
+            "Battery:", battery_state,
+            "Engine:", engine_state
+        )
 
         send_car_state(
             battery_state,
