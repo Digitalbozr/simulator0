@@ -19,13 +19,12 @@ FPS_DELAY = 0.05
 TOLERANCE_PERCENT = 0.40
 THRESHOLD = 30
 
-# prevent spam sending
 last_car_state = None
 last_send_time = 0
-SEND_DELAY = 0.5
+SEND_DELAY = 0.4
 
 # =========================
-# ICON POSITIONS
+# OBJECT POSITIONS
 # =========================
 objects = [
     [214,20,2,2,"engine"],
@@ -33,7 +32,7 @@ objects = [
 ]
 
 # =========================
-# GAME CHECK PIXELS
+# GAME DETECTION PIXELS
 # =========================
 game_points = [
 (191,69),
@@ -50,7 +49,7 @@ expected_colors = [
 ]
 
 # =========================
-# SEND STATE TO ARDUINO
+# SEND STATE
 # =========================
 def send_car_state(battery, engine):
 
@@ -91,7 +90,7 @@ def color_match(actual, expected):
 
 
 # =========================
-# GAME DETECTION
+# CHECK GAME IS OPEN
 # =========================
 def is_game_open(img):
 
@@ -108,7 +107,7 @@ def is_game_open(img):
 
 
 # =========================
-# ICON DETECTION
+# DETECT ICON STATE
 # =========================
 def detect_indicator(region,label):
 
@@ -122,10 +121,13 @@ def detect_indicator(region,label):
 
         print("ENGINE RGB:", r, g, b)
 
+        # green = engine ON
         if g > r and g > b:
             return 1
-        else:
-            return 0
+
+        # red = engine OFF
+        return 0
+
 
     if label == "battery":
 
@@ -187,7 +189,6 @@ with mss.mss() as sct:
             "Battery:", battery_state,
             "Engine:", engine_state
         )
-
 
         send_car_state(
             battery_state,
