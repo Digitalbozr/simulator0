@@ -7,7 +7,7 @@ import serial
 SERIAL_PORT="COM7"
 BAUDRATE=115200
 
-ser=serial.Serial(SERIAL_PORT,BAUDRATE,timeout=0)
+ser=serial.Serial(SERIAL_PORT,BAUDRATE)
 
 FPS_DELAY=0.05
 
@@ -46,16 +46,12 @@ def detect(region,label):
 
     if label=="engine":
 
-        print("ENGINE RGB:",r,g,b)
-
         if g>r and g>b:
             return 1
         else:
             return 0
 
     if label=="battery":
-
-        print("BATTERY RGB:",r,g,b)
 
         diff=max(abs(r-g),abs(r-b),abs(g-b))
 
