@@ -4,195 +4,97 @@ import mss
 import time
 import serial
 
-# =========================
-# SERIAL CONFIG
-# =========================
-SERIAL_PORT = "COM7"
-BAUDRATE = 115200
+SERIAL_PORT="COM7"
+BAUDRATE=115200
 
-ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=0)
+ser=serial.Serial(SERIAL_PORT,BAUDRATE,timeout=0)
 
-# =========================
-# CONFIG
-# =========================
-FPS_DELAY = 0.05
-TOLERANCE_PERCENT = 0.40
-THRESHOLD = 30
+FPS_DELAY=0.05
 
-last_car_state = None
-last_send_time = 0
-SEND_DELAY = 0.4
+last_state=None
 
-# =========================
-# OBJECT POSITIONS
-# =========================
-objects = [
-    [214,20,2,2,"engine"],
-    [232,46,2,2,"battery"],
+objects=[
+[214,20,2,2,"engine"],
+[232,46,2,2,"battery"]
 ]
 
-# =========================
-# GAME DETECTION PIXELS
-# =========================
-game_points = [
-(191,69),
-(204,63),
-(211,123),
-(230,127)
-]
+def send_state(battery,engine):
 
-expected_colors = [
-(2,3,3),
-(40,42,44),
-(252,252,252),
-(255,255,255)
-]
+    global last_state
 
-# =========================
-# SEND STATE
-# =========================
-def send_car_state(battery, engine):
+    state=(battery,engine)
 
-    global last_car_state, last_send_time
-
-    state = (battery, engine)
-    now = time.time()
-
-    if state == last_car_state:
+    if state==last_state:
         return
 
-    if now - last_send_time < SEND_DELAY:
-        return
+    cmd=f"CAR_STATE,{battery},{engine}\n"
 
-    cmd = f"CAR_STATE,{battery},{engine}\n"
-
-    print("SEND ->", cmd.strip())
+    print("SEND ->",cmd.strip())
 
     ser.write(cmd.encode())
 
-    last_car_state = state
-    last_send_time = now
+    last_state=state
 
 
-# =========================
-# COLOR MATCH
-# =========================
-def color_match(actual, expected):
+def detect(region,label):
 
-    for i in range(3):
+    avg=cv2.mean(region)[:3]
 
-        allowed = expected[i] * TOLERANCE_PERCENT
+    b=int(avg[0])
+    g=int(avg[1])
+    r=int(avg[2])
 
-        if abs(actual[i] - expected[i]) > allowed:
-            return False
+    if label=="engine":
 
-    return True
+        print("ENGINE RGB:",r,g,b)
 
-
-# =========================
-# CHECK GAME IS OPEN
-# =========================
-def is_game_open(img):
-
-    for i,(x,y) in enumerate(game_points):
-
-        b,g,r = img[y,x]
-
-        actual = (int(r),int(g),int(b))
-
-        if not color_match(actual,expected_colors[i]):
-            return False
-
-    return True
-
-
-# =========================
-# DETECT ICON STATE
-# =========================
-def detect_indicator(region,label):
-
-    avg = cv2.mean(region)[:3]
-
-    b = int(avg[0])
-    g = int(avg[1])
-    r = int(avg[2])
-
-    if label == "engine":
-
-        print("ENGINE RGB:", r, g, b)
-
-        # green = engine ON
-        if g > r and g > b:
+        if g>r and g>b:
             return 1
+        else:
+            return 0
 
-        # red = engine OFF
-        return 0
+    if label=="battery":
 
+        print("BATTERY RGB:",r,g,b)
 
-    if label == "battery":
+        diff=max(abs(r-g),abs(r-b),abs(g-b))
 
-        print("BATTERY RGB:", r, g, b)
-
-        max_diff = max(abs(r-g),abs(r-b),abs(g-b))
-
-        if max_diff < THRESHOLD:
+        if diff<30:
             return 0
         else:
             return 1
 
 
-# =========================
-# MAIN LOOP
-# =========================
 with mss.mss() as sct:
 
-    monitor = sct.monitors[1]
+    monitor=sct.monitors[1]
 
-    print("VISION SYSTEM STARTED")
+    print("VISION STARTED")
 
     while True:
 
-        screenshot = np.array(sct.grab(monitor))
+        img=np.array(sct.grab(monitor))
+        frame=cv2.cvtColor(img,cv2.COLOR_BGRA2BGR)
 
-        frame = cv2.cvtColor(
-            screenshot,
-            cv2.COLOR_BGRA2BGR
-        )
+        cropped=frame[0:230,0:263]
 
-        cropped = frame[0:230,0:263]
-
-        if not is_game_open(cropped):
-
-            print("GAME NOT DETECTED")
-
-            time.sleep(0.5)
-            continue
-
-        engine_state = 0
-        battery_state = 0
+        engine=0
+        battery=0
 
         for x,y,w,h,label in objects:
 
-            region = cropped[y:y+h,x:x+w]
+            region=cropped[y:y+h,x:x+w]
 
-            state = detect_indicator(region,label)
+            state=detect(region,label)
 
-            if label == "engine":
-                engine_state = state
+            if label=="engine":
+                engine=state
 
-            if label == "battery":
-                battery_state = state
+            if label=="battery":
+                battery=state
 
+        print("STATE -> BAT:",battery,"ENG:",engine)
 
-        print(
-            "GAME STATE ->",
-            "Battery:", battery_state,
-            "Engine:", engine_state
-        )
-
-        send_car_state(
-            battery_state,
-            engine_state
-        )
+        send_state(battery,engine)
 
         time.sleep(FPS_DELAY)
