@@ -4,93 +4,126 @@ import mss
 import time
 import serial
 
-SERIAL_PORT="COM7"
-BAUDRATE=115200
+# =========================
+# SERIAL CONFIG
+# =========================
+SERIAL_PORT = "COM7"
+BAUDRATE = 115200
 
-ser=serial.Serial(SERIAL_PORT,BAUDRATE)
+ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=1)
 
-FPS_DELAY=0.05
+# =========================
+# SCREEN CAPTURE CONFIG
+# =========================
+MONITOR_INDEX = 1
+FPS_DELAY = 0.05
 
-last_state=None
+# =========================
+# LAST STATE (anti spam)
+# =========================
+last_state = None
 
-objects=[
-[214,20,2,2,"engine"],
-[232,46,2,2,"battery"]
+# =========================
+# ICON POSITIONS
+# =========================
+objects = [
+    [214,20,2,2,"engine"],
+    [232,46,2,2,"battery"],
 ]
 
+# =========================
+# COLOR DETECTION
+# =========================
+def detect_indicator(region,label):
+
+    avg = cv2.mean(region)[:3]
+
+    b = int(avg[0])
+    g = int(avg[1])
+    r = int(avg[2])
+
+    if label == "engine":
+
+        print("ENGINE RGB:", r,g,b)
+
+        # green = engine ON
+        if g > r and g > b:
+            return 1
+
+        # red = engine OFF
+        return 0
+
+
+    if label == "battery":
+
+        print("BATTERY RGB:", r,g,b)
+
+        diff = max(abs(r-g),abs(r-b),abs(g-b))
+
+        if diff < 30:
+            return 0
+        else:
+            return 1
+
+
+# =========================
+# SEND STATE TO ARDUINO
+# =========================
 def send_state(battery,engine):
 
     global last_state
 
-    state=(battery,engine)
+    state = (battery,engine)
 
-    if state==last_state:
+    if state == last_state:
         return
 
-    cmd=f"CAR_STATE,{battery},{engine}\n"
+    cmd = f"CAR_STATE,{battery},{engine}\n"
 
     print("SEND ->",cmd.strip())
 
     ser.write(cmd.encode())
 
-    last_state=state
+    last_state = state
 
 
-def detect(region,label):
-
-    avg=cv2.mean(region)[:3]
-
-    b=int(avg[0])
-    g=int(avg[1])
-    r=int(avg[2])
-
-    if label=="engine":
-
-        if g>r and g>b:
-            return 1
-        else:
-            return 0
-
-    if label=="battery":
-
-        diff=max(abs(r-g),abs(r-b),abs(g-b))
-
-        if diff<30:
-            return 0
-        else:
-            return 1
-
-
+# =========================
+# MAIN LOOP
+# =========================
 with mss.mss() as sct:
 
-    monitor=sct.monitors[1]
+    monitor = sct.monitors[MONITOR_INDEX]
 
-    print("VISION STARTED")
+    print("VISION SYSTEM STARTED")
 
     while True:
 
-        img=np.array(sct.grab(monitor))
-        frame=cv2.cvtColor(img,cv2.COLOR_BGRA2BGR)
+        screenshot = np.array(sct.grab(monitor))
 
-        cropped=frame[0:230,0:263]
+        frame = cv2.cvtColor(
+            screenshot,
+            cv2.COLOR_BGRA2BGR
+        )
 
-        engine=0
-        battery=0
+        cropped = frame[0:230,0:263]
+
+        engine_state = 0
+        battery_state = 0
 
         for x,y,w,h,label in objects:
 
-            region=cropped[y:y+h,x:x+w]
+            region = cropped[y:y+h,x:x+w]
 
-            state=detect(region,label)
+            state = detect_indicator(region,label)
 
-            if label=="engine":
-                engine=state
+            if label == "engine":
+                engine_state = state
 
-            if label=="battery":
-                battery=state
+            if label == "battery":
+                battery_state = state
 
-        print("STATE -> BAT:",battery,"ENG:",engine)
+        print("GAME STATE -> BAT:",battery_state,"ENG:",engine_state)
 
-        send_state(battery,engine)
+        send_state(battery_state,engine_state)
 
         time.sleep(FPS_DELAY)
