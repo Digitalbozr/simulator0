@@ -3,7 +3,6 @@ import numpy as np
 import mss
 import time
 import serial
-import keyboard
 
 SERIAL_PORT = "COM7"
 BAUDRATE = 115200
@@ -12,103 +11,87 @@ ser = serial.Serial(SERIAL_PORT, BAUDRATE)
 
 FPS_DELAY = 0.05
 
-game_battery = 0
-game_engine = 0
+last_state = None
 
+# icon positions
 objects = [
-[214,20,2,2,"engine"],
-[232,46,2,2,"battery"]
+    [214,20,2,2,"engine"],
+    [232,46,2,2,"battery"]
 ]
+
+def send_state(battery,engine):
+
+    global last_state
+
+    state = (battery,engine)
+
+    if state == last_state:
+        return
+
+    cmd = f"CAR_STATE,{battery},{engine}\n"
+
+    print("SEND ->",cmd.strip())
+
+    ser.write(cmd.encode())
+
+    last_state = state
+
 
 def detect(region,label):
 
-    avg=cv2.mean(region)[:3]
+    avg = cv2.mean(region)[:3]
 
-    b=int(avg[0])
-    g=int(avg[1])
-    r=int(avg[2])
+    b = int(avg[0])
+    g = int(avg[1])
+    r = int(avg[2])
 
-    if label=="engine":
+    if label == "engine":
 
-        if g>r and g>b:
+        if g > r and g > b:
             return 1
         else:
             return 0
 
-    if label=="battery":
+    if label == "battery":
 
-        diff=max(abs(r-g),abs(r-b),abs(g-b))
+        diff = max(abs(r-g),abs(r-b),abs(g-b))
 
-        if diff<30:
+        if diff < 30:
             return 0
         else:
             return 1
-
-
-def press_e():
-    keyboard.press_and_release("e")
-    print("SEND E")
 
 
 with mss.mss() as sct:
 
-    monitor=sct.monitors[1]
+    monitor = sct.monitors[1]
 
-    print("SYSTEM STARTED")
+    print("VISION STARTED")
 
     while True:
 
-        img=np.array(sct.grab(monitor))
-        frame=cv2.cvtColor(img,cv2.COLOR_BGRA2BGR)
+        img = np.array(sct.grab(monitor))
+        frame = cv2.cvtColor(img,cv2.COLOR_BGRA2BGR)
 
-        cropped=frame[0:230,0:263]
+        cropped = frame[0:230,0:263]
 
-        engine=0
-        battery=0
+        engine = 0
+        battery = 0
 
         for x,y,w,h,label in objects:
 
-            region=cropped[y:y+h,x:x+w]
+            region = cropped[y:y+h,x:x+w]
 
-            state=detect(region,label)
+            state = detect(region,label)
 
-            if label=="engine":
-                engine=state
+            if label == "engine":
+                engine = state
 
-            if label=="battery":
-                battery=state
+            if label == "battery":
+                battery = state
 
-        game_engine=engine
-        game_battery=battery
+        print("STATE -> BAT:",battery,"ENG:",engine)
 
-        # read arduino buttons
-        if ser.in_waiting:
-
-            line=ser.readline().decode().strip()
-
-            if line.startswith("BTN"):
-
-                _,pin,value=line.split(",")
-
-                pin=int(pin)
-                value=int(value)
-
-                if value==0:  # button pressed
-
-                    print("BUTTON",pin)
-
-                    if pin==16:
-
-                        if game_battery==1:
-                            press_e()
-
-                    if pin==14:
-
-                        if game_engine==1:
-                            press_e()
-                        else:
-                            keyboard.press("e")
-                            time.sleep(0.7)
-                            keyboard.release("e")
+        send_state(battery,engine)
 
         time.sleep(FPS_DELAY)
