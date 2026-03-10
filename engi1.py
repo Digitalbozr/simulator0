@@ -86,11 +86,11 @@ key_map = {
 
     2: 'c',   # ceinture
     3: '1',   # frein a main
-    9: 'g',   # phare
+    9: '3',   # phare
     7: 'p',   # code
-    12: 'l',  # signal droite
-    13: 'r',  # signal gauche
-    5: 'h',   # hazard
+    12:'l',  # signal droite
+    13:'r',  # signal gauche
+    4: 'h',   # hazard
 }
 
 hold_indices = [0,4,11]
