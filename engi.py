@@ -13,16 +13,19 @@ BAUDRATE = 115200
 ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=0)
 
 # =========================
-# VISION CONFIG
+# CONFIG
 # =========================
 FPS_DELAY = 0.05
 TOLERANCE_PERCENT = 0.40
 THRESHOLD = 30
 
+# prevent spam sending
 last_car_state = None
+last_send_time = 0
+SEND_DELAY = 0.5
 
 # =========================
-# OBJECT POSITIONS
+# ICON POSITIONS
 # =========================
 objects = [
     [214,20,2,2,"engine"],
@@ -30,7 +33,7 @@ objects = [
 ]
 
 # =========================
-# GAME DETECTION POINTS
+# GAME CHECK PIXELS
 # =========================
 game_points = [
 (191,69),
@@ -49,41 +52,46 @@ expected_colors = [
 # =========================
 # SEND STATE TO ARDUINO
 # =========================
-def send_car_state(battery,engine):
+def send_car_state(battery, engine):
 
-    global last_car_state
+    global last_car_state, last_send_time
 
-    state = (battery,engine)
+    state = (battery, engine)
+    now = time.time()
 
-    if state != last_car_state:
+    if state == last_car_state:
+        return
 
-        cmd = f"CAR_STATE,{battery},{engine}\n"
+    if now - last_send_time < SEND_DELAY:
+        return
 
-        print("SEND ->", cmd.strip())
+    cmd = f"CAR_STATE,{battery},{engine}\n"
 
-        ser.write(cmd.encode())
+    print("SEND ->", cmd.strip())
 
-        last_car_state = state
+    ser.write(cmd.encode())
+
+    last_car_state = state
+    last_send_time = now
 
 
 # =========================
-# COLOR MATCH FUNCTION
+# COLOR MATCH
 # =========================
-def color_match(actual,expected):
+def color_match(actual, expected):
 
     for i in range(3):
 
         allowed = expected[i] * TOLERANCE_PERCENT
 
         if abs(actual[i] - expected[i]) > allowed:
-
             return False
 
     return True
 
 
 # =========================
-# CHECK IF GAME IS OPEN
+# GAME DETECTION
 # =========================
 def is_game_open(img):
 
@@ -94,14 +102,13 @@ def is_game_open(img):
         actual = (int(r),int(g),int(b))
 
         if not color_match(actual,expected_colors[i]):
-
             return False
 
     return True
 
 
 # =========================
-# DETECT ICON STATE
+# ICON DETECTION
 # =========================
 def detect_indicator(region,label):
 
@@ -111,24 +118,15 @@ def detect_indicator(region,label):
     g = int(avg[1])
     r = int(avg[2])
 
-    # =====================
-    # ENGINE ICON
-    # =====================
     if label == "engine":
 
         print("ENGINE RGB:", r, g, b)
 
-        # GREEN = ENGINE ON
         if g > r and g > b:
             return 1
-
-        # RED = ENGINE OFF
         else:
             return 0
 
-    # =====================
-    # BATTERY ICON
-    # =====================
     if label == "battery":
 
         print("BATTERY RGB:", r, g, b)
@@ -142,7 +140,7 @@ def detect_indicator(region,label):
 
 
 # =========================
-# MAIN VISION LOOP
+# MAIN LOOP
 # =========================
 with mss.mss() as sct:
 
@@ -161,9 +159,6 @@ with mss.mss() as sct:
 
         cropped = frame[0:230,0:263]
 
-        # =====================
-        # CHECK GAME
-        # =====================
         if not is_game_open(cropped):
 
             print("GAME NOT DETECTED")
@@ -174,9 +169,6 @@ with mss.mss() as sct:
         engine_state = 0
         battery_state = 0
 
-        # =====================
-        # DETECT OBJECTS
-        # =====================
         for x,y,w,h,label in objects:
 
             region = cropped[y:y+h,x:x+w]
@@ -190,9 +182,6 @@ with mss.mss() as sct:
                 battery_state = state
 
 
-        # =====================
-        # PRINT STATE
-        # =====================
         print(
             "GAME STATE ->",
             "Battery:", battery_state,
@@ -200,13 +189,9 @@ with mss.mss() as sct:
         )
 
 
-        # =====================
-        # SEND TO ARDUINO
-        # =====================
         send_car_state(
             battery_state,
             engine_state
         )
-
 
         time.sleep(FPS_DELAY)
