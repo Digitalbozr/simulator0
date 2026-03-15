@@ -7,14 +7,16 @@ import serial
 PORT = "COM7"
 BAUD = 115200
 
-HAZARD_INDEX = 4
-
 ser = serial.Serial(PORT, BAUD, timeout=0)
 
 last_state = None
 last_game_open = None
 
 TOLERANCE = 0.4
+
+# ===============================
+# GAME DETECTION
+# ===============================
 
 game_points = [
 (191,69),
@@ -30,29 +32,52 @@ expected_colors = [
 (255,255,255)
 ]
 
+# ===============================
+# OBJECTS TO DETECT
+# ===============================
+
 objects = [
+
+# engine battery belt brake
 [214,20,2,2,"engine",0],
 [232,46,2,2,"battery",1],
 [246,62,2,2,"belt",2],
-[184,212,2,2,"lights",9],
 [226,176,2,2,"handbrake",3],
 
-[184, 212, 2, 2, "phare", 9],  # gg
-[206, 198, 1, 1, "code", 7], # 
+# lights
+[184,212,2,2,"phare",9],
+[206,198,1,1,"code",7],
 
-[170, 146, 5, 5, "signalGauche", 13], #
-[198, 146, 5, 5, "signalDroite", 12], # 
+# indicators
+[170,146,5,5,"left",13],
+[198,146,5,5,"right",12],
 
 ]
 
+# ===============================
+# SERIAL READ
+# ===============================
+
 def read_serial():
+
     while ser.in_waiting > 0:
+
         try:
+
             msg = ser.readline().decode(errors="ignore").strip()
+
             if msg:
-                print("FROM SERIAL:", msg)
+
+                print("SERIAL:", msg)
+
         except:
+
             pass
+
+
+# ===============================
+# COLOR MATCH
+# ===============================
 
 def color_match(actual, expected):
 
@@ -61,10 +86,15 @@ def color_match(actual, expected):
         allowed = expected[i] * TOLERANCE
 
         if abs(actual[i] - expected[i]) > allowed:
+
             return False
 
     return True
 
+
+# ===============================
+# GAME DETECTION
+# ===============================
 
 def detect_game(frame):
 
@@ -75,10 +105,15 @@ def detect_game(frame):
         actual = (int(r),int(g),int(b))
 
         if not color_match(actual, expected_colors[i]):
+
             return False
 
     return True
 
+
+# ===============================
+# DETECT STATE
+# ===============================
 
 def detect_state(region, label):
 
@@ -88,23 +123,45 @@ def detect_state(region, label):
     g = int(avg[1])
     r = int(avg[2])
 
-    # ENGINE SPECIAL DETECTION
+    # =========================
+    # ENGINE
+    # =========================
+
     if label == "engine":
 
-        if r > 100 and r > g + 20 and r > b + 20:
-            return 0
-
-        elif g > 100 and g > r + 20 and g > b + 20:
+        if g > r and g > b:
             return 1
 
+        if r > g and r > b:
+            return 0
+
+        return 0
+
+
+    # =========================
+    # CODE LIGHT
+    # =========================
+
+    if label == "code":
+
+        if b > 120 and g > 120:
+            return 1
         else:
             return 0
 
+
+    # =========================
     # NORMAL INDICATORS
+    # =========================
+
     diff = max(abs(r-g), abs(r-b), abs(g-b))
 
     return 0 if diff < 30 else 1
 
+
+# ===============================
+# SERIAL SEND
+# ===============================
 
 def send_game(val):
 
@@ -128,6 +185,10 @@ def send_state(state):
         last_state = state
 
 
+# ===============================
+# MAIN LOOP
+# ===============================
+
 with mss.mss() as sct:
 
     monitor = sct.monitors[1]
@@ -147,10 +208,11 @@ with mss.mss() as sct:
         send_game(1 if game_open else 0)
 
         if not game_open:
+
             time.sleep(0.5)
             continue
 
-        states = ['0']*14
+        states = ['0'] * 14
 
         for x,y,w,h,label,index in objects:
 
@@ -167,4 +229,3 @@ with mss.mss() as sct:
         send_state(state_string)
 
         time.sleep(0.05)
-        
