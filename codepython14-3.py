@@ -148,6 +148,21 @@ def detect_state(region, label):
             return 1
         else:
             return 0
+    
+    if label in ["left","right"]:
+        diff = max(abs(r-g), abs(r-b), abs(g-b))
+        now = time.time()
+        lamp_on = diff > 40
+        data = indicator_state[label]
+        if lamp_on:
+            data["last_on"] = now
+            data["state"] = 1
+            print(f"{label} indicator ON")
+        else:
+            if now - data["last_on"] > BLINK_TIMEOUT:
+                data["state"] = 0
+                print(f"{label} indicator OFF")
+        return data["state"]
 
 
     # =========================
